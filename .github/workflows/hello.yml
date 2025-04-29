@@ -15,4 +15,6 @@ jobs:
       - name: Now it is
         run: date
       - name: Directory content
-        run: ls -l
+        shell: pwsh
+        run: |
+          Get-ChildItem | Select-Object Mode, LastWriteTime, Length, Name
