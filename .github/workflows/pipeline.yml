@@ -2,11 +2,22 @@ name: Deployment Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize]
 
 jobs:
-  simple-deployment-pipeline:
+
+  avoid_redundancy:
+    runs-on: windows-2022
+    steps:
+      - name: Cancel Previous Redundant Builds
+        uses: styfle/cancel-workflow-action@0.9.1
+        with:
+          access_token: ${{ github.token }}
+
+  install:
     runs-on: windows-2022
     steps:
       - name: Checkout
@@ -16,18 +27,65 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
+          cache: 'npm'
       - name: Install dependencies
         run: npm ci
+
+  lint:
+    needs: install
+    runs-on: windows-2022
+    steps:
       - name: Lint
         run: npm run eslint
+
+  build:
+    needs: lint
+    runs-on: windows-2022
+    steps:
       - name: Build
         run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: dist
+
+  test:
+    needs: build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
       - name: Test
         run: npm test
+
+  e2e:
+    needs: build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: dist
       - name: E2E tests
         uses: cypress-io/github-action@v6
         with:
           command: npm run test:e2e
           start: npm run start-test
           wait-on: http://localhost:5000
+
+  deploy:
+    needs: [test, e2e]
+    runs-on: windows-2022
+    steps:
+      - name: Deploy to Heroku
+        if: ${{ github.event_name == 'push' }}
+        uses: akhileshns/heroku-deploy@v3.14.0
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          healthcheck: 'https://${{secrets.HEROKU_APP_NAME}}.herokuapp.com/health'
+          rollbackonhealthcheckfailed: true
