@@ -98,7 +98,7 @@ jobs:
 
       - name: Install Koyeb CLI
         run: |
-          curl -sSfL https://downloads.koyeb.com/cli/koyeb-linux.tar.gz | tar -xz
+          curl -sSfL https://install.koyeb.com | sh
           sudo mv koyeb /usr/local/bin
 
       - name: Deploy to Koyeb
