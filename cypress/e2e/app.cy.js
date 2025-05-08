@@ -12,4 +12,10 @@ describe('Pokedex', function() {
     cy.contains('overgrow')
     cy.contains('chlorophyll')
   })
+  it('can go back to home page from pokemon page', function() {
+    cy.visit('http://localhost:5000')
+    cy.contains('ivysaur').click()
+    cy.get('.links').contains('a','Home').click()
+    cy.location('pathname').should('eq', '/')
+  })
 })
