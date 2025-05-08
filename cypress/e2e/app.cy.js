@@ -18,4 +18,10 @@ describe('Pokedex', function() {
     cy.get('.links').contains('a','Home').click()
     cy.location('pathname').should('eq', '/')
   })
+  it('can go to next pokemon page from pokemon page', function() {
+    cy.visit('http://localhost:5000')
+    cy.contains('ivysaur').click()
+    cy.get('.links').contains('a','Next').click()
+    cy.location('pathname').should('eq', '/pokemon/venusaur')
+  })
 })
